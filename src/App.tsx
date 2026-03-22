@@ -304,14 +304,28 @@ function weatherIconMeta(code: number, isDay: boolean): { emoji: string; kind: s
   return { emoji: '🌤️', kind: 'cloud' }
 }
 
-function createWeatherIconByTime(code: number, isDay: boolean): DivIcon {
+function createWeatherIconWithTemp(code: number, isDay: boolean, tempC: number): DivIcon {
   const meta = weatherIconMeta(code, isDay)
+  const roundedTemp = Math.round(tempC)
   return L.divIcon({
     className: 'weather-pin-wrap',
-    html: `<div class="weather-pin ${meta.kind} ${isDay ? 'day' : 'night'}">${meta.emoji}</div>`,
+    html: `<div class="weather-pin ${meta.kind} ${isDay ? 'day' : 'night'}"><span class="weather-emoji">${meta.emoji}</span><span class="weather-temp-badge">${roundedTemp}°</span></div>`,
     iconSize: [30, 30],
     iconAnchor: [15, 15],
   })
+}
+
+function timezoneToPlaceLabel(timezone?: string): string | null {
+  if (!timezone) {
+    return null
+  }
+
+  const lastPart = timezone.split('/').pop()
+  if (!lastPart) {
+    return null
+  }
+
+  return lastPart.replace(/_/g, ' ')
 }
 
 function MapClickCapture({
@@ -586,32 +600,31 @@ function App() {
 
       const samples: WeatherSample[] = []
       let failedCount = 0
-      const geocodeCache = new Map<string, string>()
+      const geocodeCache = new Map<string, string | null>()
 
-      const getNearestPlaceName = async (lat: number, lon: number): Promise<string> => {
+      const getNearestPlaceName = async (lat: number, lon: number): Promise<string | null> => {
         const key = `${lat.toFixed(3)},${lon.toFixed(3)}`
         const cached = geocodeCache.get(key)
-        if (cached) {
+        if (cached !== undefined) {
           return cached
         }
 
-        const fallback = `${lat.toFixed(4)}, ${lon.toFixed(4)}`
         const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en&format=json`
 
         try {
           const response = await fetch(url)
           if (!response.ok) {
-            geocodeCache.set(key, fallback)
-            return fallback
+            geocodeCache.set(key, null)
+            return null
           }
 
           const payload: GeocodingResponse = await response.json()
-          const label = placeLabelFromReverse(payload.results?.[0] ?? null) ?? fallback
+          const label = placeLabelFromReverse(payload.results?.[0] ?? null)
           geocodeCache.set(key, label)
           return label
         } catch {
-          geocodeCache.set(key, fallback)
-          return fallback
+          geocodeCache.set(key, null)
+          return null
         }
       }
 
@@ -619,7 +632,7 @@ function App() {
         target: { lat: number; lon: number; eta: Date; routeKm: number },
         idx: number,
       ): Promise<WeatherSample> => {
-        const placeName = await getNearestPlaceName(target.lat, target.lon)
+        const reversePlaceName = await getNearestPlaceName(target.lat, target.lon)
         const date = format(target.eta, 'yyyy-MM-dd')
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${target.lat}&longitude=${target.lon}&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m,is_day&timezone=auto&start_date=${date}&end_date=${date}`
 
@@ -650,6 +663,7 @@ function App() {
           const weatherCodes = payload.hourly?.weather_code ?? []
           const windSpeeds = payload.hourly?.wind_speed_10m ?? []
           const dayFlags = payload.hourly?.is_day ?? []
+          const timezoneLabel = timezoneToPlaceLabel((payload as { timezone?: string }).timezone)
 
           if (times.length === 0) {
             if (attempt < 2) {
@@ -664,7 +678,8 @@ function App() {
             id: idx,
             lat: target.lat,
             lon: target.lon,
-            locationName: placeName,
+            locationName:
+              reversePlaceName ?? timezoneLabel ?? `${target.lat.toFixed(4)}, ${target.lon.toFixed(4)}`,
             routeKm: target.routeKm,
             isDay: (dayFlags[nearestIdx] ?? 1) === 1,
             etaIso: times[nearestIdx],
@@ -1129,7 +1144,7 @@ function App() {
             <Marker
               key={sample.id}
               position={[sample.lat, sample.lon]}
-              icon={createWeatherIconByTime(sample.code, sample.isDay)}
+              icon={createWeatherIconWithTemp(sample.code, sample.isDay, sample.tempC)}
             >
               <Popup>
                 <strong>Weather Point {idx + 1}</strong>
