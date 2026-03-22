@@ -77,6 +77,9 @@ L.Icon.Default.mergeOptions({
 const MAX_FORECAST_DAYS = 16
 const MIN_WEATHER_POINTS = 6
 const MAX_WEATHER_POINTS = 20
+const DEFAULT_MAP_CENTER: LatLngTuple = [34.02, -6.84]
+const DEFAULT_MAP_ZOOM = 6
+const IP_CENTER_ZOOM = 7
 
 const weatherCodeText: Record<number, string> = {
   0: 'Clear sky',
@@ -366,6 +369,16 @@ function FitToRoute({ points }: { points: LatLngTuple[] }) {
   return null
 }
 
+function RecenterMap({ center, zoom }: { center: LatLngTuple; zoom: number }) {
+  const map = useMap()
+
+  useEffect(() => {
+    map.setView(center, zoom, { animate: false })
+  }, [map, center, zoom])
+
+  return null
+}
+
 function App() {
   const [stops, setStops] = useState<RouteStop[]>(initialStops())
   const [activeStopId, setActiveStopId] = useState<number | null>(null)
@@ -386,6 +399,8 @@ function App() {
   const [isRouting, setIsRouting] = useState(false)
   const [, setIsWeatherLoading] = useState(false)
   const [error, setError] = useState<string>('')
+  const [mapCenter, setMapCenter] = useState<LatLngTuple>(DEFAULT_MAP_CENTER)
+  const [mapZoom, setMapZoom] = useState<number>(DEFAULT_MAP_ZOOM)
 
   const tooFarInFuture = useMemo(() => {
     const selected = parseISO(tripStart)
@@ -406,6 +421,74 @@ function App() {
     () => stops.filter((stop): stop is RouteStop & { waypoint: Waypoint } => stop.waypoint !== null),
     [stops],
   )
+
+  useEffect(() => {
+    let cancelled = false
+
+    const setCenterIfValid = (lat: unknown, lon: unknown): boolean => {
+      if (typeof lat !== 'number' || typeof lon !== 'number') {
+        return false
+      }
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return false
+      }
+
+      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        return false
+      }
+
+      if (!cancelled) {
+        setMapCenter([lat, lon])
+        setMapZoom(IP_CENTER_ZOOM)
+      }
+      return true
+    }
+
+    const fetchWithTimeout = async (url: string): Promise<Response> => {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 4500)
+
+      try {
+        return await fetch(url, { signal: controller.signal })
+      } finally {
+        clearTimeout(timeoutId)
+      }
+    }
+
+    const locateByIp = async () => {
+      const providers = [
+        'https://ipapi.co/json/',
+        'https://ipwho.is/',
+      ]
+
+      for (const provider of providers) {
+        try {
+          const response = await fetchWithTimeout(provider)
+          if (!response.ok) {
+            continue
+          }
+
+          const payload = await response.json()
+          const found =
+            setCenterIfValid(payload?.latitude, payload?.longitude) ||
+            setCenterIfValid(payload?.lat, payload?.lon)
+
+          if (found) {
+            return
+          }
+        } catch {
+          // Ignore location lookup failures and keep fallback center.
+        }
+      }
+    }
+
+    void locateByIp()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const setStopInput = (id: number, input: string) => {
     setStops((prev) =>
@@ -1149,11 +1232,15 @@ function App() {
       </aside>
 
       <section className="map-wrap">
-        <MapContainer center={[34.02, -6.84]} zoom={6} scrollWheelZoom className="map-root">
+        <MapContainer center={mapCenter} zoom={mapZoom} scrollWheelZoom className="map-root">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          {routePoints.length === 0 && resolvedStops.length === 0 && (
+            <RecenterMap center={mapCenter} zoom={mapZoom} />
+          )}
 
           <MapClickCapture enabled={activeStopId !== null} onPickLocation={assignMapPickToActiveStop} />
 
