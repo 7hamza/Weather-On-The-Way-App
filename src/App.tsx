@@ -282,7 +282,53 @@ function placeLabelFromReverse(result: GeocodingResult | null): string | null {
     return null
   }
 
-  return result.name ?? result.admin2 ?? result.admin1 ?? result.country ?? null
+  if (result.name && result.country) {
+    return `${result.name}, ${result.country}`
+  }
+
+  return result.name ?? result.admin2 ?? null
+}
+
+function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (value: number) => (value * Math.PI) / 180
+  const earthRadiusKm = 6371
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return earthRadiusKm * c
+}
+
+function nearestAccuratePlaceLabel(
+  candidates: GeocodingResult[] | undefined,
+  lat: number,
+  lon: number,
+): string | null {
+  if (!candidates || candidates.length === 0) {
+    return null
+  }
+
+  const ranked = candidates
+    .map((candidate) => ({
+      candidate,
+      label: placeLabelFromReverse(candidate),
+      distanceKm: haversineDistanceKm(lat, lon, candidate.latitude, candidate.longitude),
+    }))
+    .filter((entry) => entry.label !== null)
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+
+  if (ranked.length === 0) {
+    return null
+  }
+
+  const nearest = ranked[0]
+  if (nearest.distanceKm <= 45) {
+    return nearest.label
+  }
+
+  return null
 }
 
 function weatherIconMeta(code: number, isDay: boolean): { emoji: string; kind: string } {
@@ -316,19 +362,6 @@ function createWeatherIconWithTemp(code: number, isDay: boolean, tempC: number):
     iconSize: [30, 30],
     iconAnchor: [15, 15],
   })
-}
-
-function timezoneToPlaceLabel(timezone?: string): string | null {
-  if (!timezone) {
-    return null
-  }
-
-  const lastPart = timezone.split('/').pop()
-  if (!lastPart) {
-    return null
-  }
-
-  return lastPart.replace(/_/g, ' ')
 }
 
 function escapeXml(value: string): string {
@@ -715,7 +748,7 @@ function App() {
           return cached
         }
 
-        const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en&format=json`
+        const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=8&language=en&format=json`
 
         try {
           const response = await fetch(url)
@@ -725,7 +758,7 @@ function App() {
           }
 
           const payload: GeocodingResponse = await response.json()
-          const label = placeLabelFromReverse(payload.results?.[0] ?? null)
+          const label = nearestAccuratePlaceLabel(payload.results, lat, lon)
           geocodeCache.set(key, label)
           return label
         } catch {
@@ -769,8 +802,6 @@ function App() {
           const weatherCodes = payload.hourly?.weather_code ?? []
           const windSpeeds = payload.hourly?.wind_speed_10m ?? []
           const dayFlags = payload.hourly?.is_day ?? []
-          const timezoneLabel = timezoneToPlaceLabel((payload as { timezone?: string }).timezone)
-
           if (times.length === 0) {
             if (attempt < 2) {
               continue
@@ -784,8 +815,7 @@ function App() {
             id: idx,
             lat: target.lat,
             lon: target.lon,
-            locationName:
-              reversePlaceName ?? timezoneLabel ?? `${target.lat.toFixed(4)}, ${target.lon.toFixed(4)}`,
+            locationName: reversePlaceName ?? `Near ${target.lat.toFixed(4)}, ${target.lon.toFixed(4)}`,
             routeKm: target.routeKm,
             isDay: (dayFlags[nearestIdx] ?? 1) === 1,
             etaIso: times[nearestIdx],
