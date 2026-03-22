@@ -817,7 +817,6 @@ function App() {
   }
 
   // buildRoute is intentionally not in deps to avoid recreating and retriggering this effect every render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (stops.length < 2 || stops.some((stop) => stop.waypoint === null)) {
       return
@@ -828,6 +827,7 @@ function App() {
     }, 500)
 
     return () => clearTimeout(timeout)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stops, tripStart, tripTimeMode, weatherPointCount])
 
   return (
