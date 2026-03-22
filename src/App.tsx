@@ -810,10 +810,10 @@ function App() {
       .map(([lat, lon]) => `<trkpt lat="${lat}" lon="${lon}" />`)
       .join('')
 
-    const routeName = escapeXml(`RouteApp ride (${tripTimeMode} ${tripStart})`)
+    const routeName = escapeXml(`ThrottleCast ride (${tripTimeMode} ${tripStart})`)
 
     const gpx = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="RouteApp" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="ThrottleCast" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata>
     <name>${routeName}</name>
     <time>${exportTime}</time>
@@ -837,7 +837,7 @@ function App() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `routeapp-itinerary-${format(new Date(), 'yyyyMMdd-HHmm')}.gpx`
+    a.download = `throttlecast-itinerary-${format(new Date(), 'yyyyMMdd-HHmm')}.gpx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -948,8 +948,8 @@ function App() {
       <aside className="panel">
         <header>
           <p className="kicker">
-            <img className="brand-icon" src="/favicon.svg" alt="RouteApp icon" />
-            <span>RouteApp</span>
+            <img className="brand-icon" src="/favicon.svg" alt="ThrottleCast icon" />
+            <span>ThrottleCast</span>
           </p>
           <h1>Free Weather On The Way App</h1>
           <p className="subtitle">Interactive motorcycle itinerary builder with free weather forecasts along your route.</p>

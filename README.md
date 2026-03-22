@@ -1,8 +1,8 @@
-# RouteApp
+# ThrottleCast
 
 Free weather-on-the-way web app for motorcycle trip planning.
 
-RouteApp lets you build an interactive itinerary, view your route on the map, and estimate weather checkpoints along the path at the expected time you pass each point.
+ThrottleCast lets you build an interactive itinerary, view your route on the map, and estimate weather checkpoints along the path at the expected time you pass each point.
 
 ## Features
 
