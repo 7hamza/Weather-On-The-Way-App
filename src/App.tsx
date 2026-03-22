@@ -328,6 +328,15 @@ function timezoneToPlaceLabel(timezone?: string): string | null {
   return lastPart.replace(/_/g, ' ')
 }
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 function MapClickCapture({
   enabled,
   onPickLocation,
@@ -779,31 +788,56 @@ function App() {
       return
     }
 
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      tripTimeMode,
-      tripTime: tripStart,
-      stops: stops.map((stop, idx) => ({
-        order: idx + 1,
-        kind: stop.kind,
-        label: stop.input,
-        waypoint: stop.waypoint,
-      })),
-      route: {
-        distanceMeters: routeDistanceM,
-        durationSeconds: routeDurationS,
-        polylinePoints: routePoints,
-      },
-      weather: weatherSamples,
-    }
+    const exportTime = new Date().toISOString()
+    const resolved = stops
+      .map((stop, idx) => ({ stop, idx }))
+      .filter((entry): entry is { stop: RouteStop & { waypoint: Waypoint }; idx: number } => entry.stop.waypoint !== null)
 
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: 'application/json;charset=utf-8',
+    const waypointXml = resolved
+      .map(({ stop, idx }) => {
+        const kindLabel =
+          stop.kind === 'origin' ? 'Start' : stop.kind === 'destination' ? 'Destination' : `Stop ${idx}`
+        const name = escapeXml(`${kindLabel}: ${stop.waypoint.name}`)
+        return `<wpt lat="${stop.waypoint.lat}" lon="${stop.waypoint.lon}"><name>${name}</name></wpt>`
+      })
+      .join('')
+
+    const routePointXml = routePoints
+      .map(([lat, lon]) => `<rtept lat="${lat}" lon="${lon}" />`)
+      .join('')
+
+    const trackPointXml = routePoints
+      .map(([lat, lon]) => `<trkpt lat="${lat}" lon="${lon}" />`)
+      .join('')
+
+    const routeName = escapeXml(`RouteApp ride (${tripTimeMode} ${tripStart})`)
+
+    const gpx = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="RouteApp" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>${routeName}</name>
+    <time>${exportTime}</time>
+  </metadata>
+  ${waypointXml}
+  <rte>
+    <name>${routeName}</name>
+    ${routePointXml}
+  </rte>
+  <trk>
+    <name>${routeName}</name>
+    <trkseg>
+      ${trackPointXml}
+    </trkseg>
+  </trk>
+</gpx>`
+
+    const blob = new Blob([gpx], {
+      type: 'application/gpx+xml;charset=utf-8',
     })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `routeapp-itinerary-${format(new Date(), 'yyyyMMdd-HHmm')}.json`
+    a.download = `routeapp-itinerary-${format(new Date(), 'yyyyMMdd-HHmm')}.gpx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -1054,7 +1088,7 @@ function App() {
 
           <div className="row actions">
             <button type="button" onClick={exportItinerary} disabled={!hasTripData}>
-              Export itinerary
+              Export GPX
             </button>
           </div>
 
