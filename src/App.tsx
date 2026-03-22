@@ -947,7 +947,10 @@ function App() {
     <main className="app-shell">
       <aside className="panel">
         <header>
-          <p className="kicker">RouteApp</p>
+          <p className="kicker">
+            <img className="brand-icon" src="/favicon.svg" alt="RouteApp icon" />
+            <span>RouteApp</span>
+          </p>
           <h1>Free Weather On The Way App</h1>
           <p className="subtitle">Interactive motorcycle itinerary builder with free weather forecasts along your route.</p>
           <p className="creator-note">
