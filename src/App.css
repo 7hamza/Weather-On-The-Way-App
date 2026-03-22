@@ -59,6 +59,19 @@ h2 {
   border-bottom: 1px dashed #7ca8e5;
 }
 
+.youtube-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.youtube-link svg {
+  width: 14px;
+  height: 14px;
+  fill: #ff2d2d;
+  flex: 0 0 auto;
+}
+
 .creator-note a:hover {
   color: #185abc;
   border-bottom-color: #185abc;
