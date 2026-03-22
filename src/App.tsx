@@ -816,6 +816,8 @@ function App() {
     URL.revokeObjectURL(url)
   }
 
+  // buildRoute is intentionally not in deps to avoid recreating and retriggering this effect every render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (stops.length < 2 || stops.some((stop) => stop.waypoint === null)) {
       return
