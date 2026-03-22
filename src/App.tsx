@@ -332,25 +332,55 @@ function nearestAccuratePlaceLabel(
 }
 
 function weatherIconMeta(code: number, isDay: boolean): { emoji: string; kind: string } {
-  if (code === 0 || code === 1) {
+  if (code === 0) {
     return isDay ? { emoji: '☀️', kind: 'clear' } : { emoji: '🌙', kind: 'clear' }
   }
-  if (code === 2 || code === 3) {
-    return isDay ? { emoji: '⛅', kind: 'cloud' } : { emoji: '☁️', kind: 'cloud' }
+
+  if (code === 1) {
+    return isDay ? { emoji: '🌤️', kind: 'mostly-clear' } : { emoji: '🌙', kind: 'mostly-clear' }
   }
+
+  if (code === 2) {
+    return isDay ? { emoji: '⛅', kind: 'partly-cloudy' } : { emoji: '☁️', kind: 'partly-cloudy' }
+  }
+
+  if (code === 3) {
+    return { emoji: '☁️', kind: 'overcast' }
+  }
+
   if (code === 45 || code === 48) {
     return { emoji: '🌫️', kind: 'fog' }
   }
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
+
+  if ([51, 53, 55].includes(code)) {
+    return { emoji: '🌦️', kind: 'drizzle' }
+  }
+
+  if ([56, 57, 66, 67].includes(code)) {
+    return { emoji: '🧊', kind: 'freezing' }
+  }
+
+  if ([61, 63, 65].includes(code)) {
     return { emoji: '🌧️', kind: 'rain' }
   }
-  if ([71, 73, 75, 77, 85, 86].includes(code)) {
-    return { emoji: '❄️', kind: 'snow' }
+
+  if ([80, 81, 82].includes(code)) {
+    return { emoji: '🌦️', kind: 'showers' }
   }
+
+  if ([71, 73, 75, 77].includes(code)) {
+    return { emoji: '🌨️', kind: 'snow' }
+  }
+
+  if ([85, 86].includes(code)) {
+    return { emoji: '🌨️', kind: 'snow-showers' }
+  }
+
   if ([95, 96, 99].includes(code)) {
     return { emoji: '⛈️', kind: 'storm' }
   }
-  return { emoji: '🌤️', kind: 'cloud' }
+
+  return isDay ? { emoji: '🌤️', kind: 'mostly-clear' } : { emoji: '☁️', kind: 'partly-cloudy' }
 }
 
 function createWeatherIconWithTemp(code: number, isDay: boolean, tempC: number): DivIcon {

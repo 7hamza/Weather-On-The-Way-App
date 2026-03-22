@@ -646,6 +646,28 @@ button.danger {
   color: #e8efff;
 }
 
+.weather-pin.mostly-clear.day {
+  background: #f6d585;
+}
+
+.weather-pin.mostly-clear.night {
+  background: #2a3a61;
+  color: #eef4ff;
+}
+
+.weather-pin.partly-cloudy.day {
+  background: #c6dde0;
+}
+
+.weather-pin.partly-cloudy.night {
+  background: #3c4f66;
+  color: #edf3ff;
+}
+
+.weather-pin.overcast {
+  background: #a8bac8;
+}
+
 .weather-pin.cloud.day {
   background: #b8d5d9;
 }
@@ -659,12 +681,28 @@ button.danger {
   background: #d8d8d8;
 }
 
+.weather-pin.drizzle {
+  background: #9ec7e7;
+}
+
+.weather-pin.freezing {
+  background: #cce4ff;
+}
+
 .weather-pin.rain {
   background: #87bfff;
 }
 
+.weather-pin.showers {
+  background: #73b1ea;
+}
+
 .weather-pin.snow {
   background: #eef7ff;
+}
+
+.weather-pin.snow-showers {
+  background: #e4f1ff;
 }
 
 .weather-pin.storm {
