@@ -54,24 +54,18 @@ type OsrmRoute = {
   }>
 }
 
-type NominatimResult = {
-  place_id: number
-  display_name: string
-  lat: string
-  lon: string
+type GeocodingResult = {
+  id?: number
+  name?: string
+  latitude: number
+  longitude: number
+  country?: string
+  admin1?: string
+  admin2?: string
 }
 
-type NominatimReverseResult = {
-  address?: {
-    city?: string
-    town?: string
-    village?: string
-    municipality?: string
-    county?: string
-    state?: string
-    country?: string
-  }
-  display_name?: string
+type GeocodingResponse = {
+  results?: GeocodingResult[]
 }
 
 L.Icon.Default.mergeOptions({
@@ -280,27 +274,12 @@ function createStopIcon(kind: RouteStop['kind'], index: number): DivIcon {
   })
 }
 
-function placeLabelFromReverse(result: NominatimReverseResult | null): string | null {
+function placeLabelFromReverse(result: GeocodingResult | null): string | null {
   if (!result) {
     return null
   }
 
-  const addr = result.address
-  if (!addr) {
-    return result.display_name?.split(',')[0]?.trim() ?? null
-  }
-
-  return (
-    addr.city ??
-    addr.town ??
-    addr.village ??
-    addr.municipality ??
-    addr.county ??
-    addr.state ??
-    addr.country ??
-    result.display_name?.split(',')[0]?.trim() ??
-    null
-  )
+  return result.name ?? result.admin2 ?? result.admin1 ?? result.country ?? null
 }
 
 function weatherIconMeta(code: number, isDay: boolean): { emoji: string; kind: string } {
@@ -367,7 +346,7 @@ function FitToRoute({ points }: { points: LatLngTuple[] }) {
 function App() {
   const [stops, setStops] = useState<RouteStop[]>(initialStops())
   const [activeStopId, setActiveStopId] = useState<number | null>(null)
-  const [searchResults, setSearchResults] = useState<NominatimResult[]>([])
+  const [searchResults, setSearchResults] = useState<GeocodingResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
 
   const [tripStart, setTripStart] = useState<string>(
@@ -483,7 +462,7 @@ function App() {
 
   const searchLocation = async (query: string) => {
     const q = query.trim()
-    if (q.length < 2) {
+    if (q.length < 3) {
       setSearchResults([])
       return
     }
@@ -493,15 +472,15 @@ function App() {
 
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=7&q=${encodeURIComponent(q)}`,
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=7&language=en&format=json`,
       )
 
       if (!response.ok) {
         throw new Error('Location search failed. Please try again.')
       }
 
-      const payload: NominatimResult[] = await response.json()
-      setSearchResults(payload)
+      const payload: GeocodingResponse = await response.json()
+      setSearchResults(payload.results ?? [])
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Location search failed.'
       setError(message)
@@ -510,21 +489,21 @@ function App() {
     }
   }
 
-  const applyPlaceToActiveStop = (place: NominatimResult) => {
+  const applyPlaceToActiveStop = (place: GeocodingResult) => {
     if (!activeStopId) {
       return
     }
 
-    const lat = Number.parseFloat(place.lat)
-    const lon = Number.parseFloat(place.lon)
+    const lat = place.latitude
+    const lon = place.longitude
     if (Number.isNaN(lat) || Number.isNaN(lon)) {
       setError('Selected location had invalid coordinates.')
       return
     }
 
-    const shortName = place.display_name.split(',').slice(0, 2).join(',')
+    const shortName = [place.name, place.admin1, place.country].filter(Boolean).join(', ')
     applyStopWaypoint(activeStopId, {
-      name: shortName,
+      name: shortName || `Pinned ${lat.toFixed(4)}, ${lon.toFixed(4)}`,
       lat,
       lon,
     })
@@ -546,14 +525,14 @@ function App() {
 
   useEffect(() => {
     const q = activeStop?.input.trim() ?? ''
-    if (activeStopId === null || q.length < 2) {
+    if (activeStopId === null || q.length < 3) {
       setSearchResults([])
       return
     }
 
     const timeout = setTimeout(() => {
       void searchLocation(q)
-    }, 320)
+    }, 450)
 
     return () => clearTimeout(timeout)
   }, [activeStop?.input, activeStopId])
@@ -617,7 +596,7 @@ function App() {
         }
 
         const fallback = `${lat.toFixed(4)}, ${lon.toFixed(4)}`
-        const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`
+        const url = `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&language=en&format=json`
 
         try {
           const response = await fetch(url)
@@ -626,8 +605,8 @@ function App() {
             return fallback
           }
 
-          const payload: NominatimReverseResult = await response.json()
-          const label = placeLabelFromReverse(payload) ?? fallback
+          const payload: GeocodingResponse = await response.json()
+          const label = placeLabelFromReverse(payload.results?.[0] ?? null) ?? fallback
           geocodeCache.set(key, label)
           return label
         } catch {
@@ -978,9 +957,9 @@ function App() {
                     {isActive && searchResults.length > 0 && (
                       <ul className="search-results inline-suggest">
                         {searchResults.map((result) => (
-                          <li key={result.place_id}>
+                          <li key={result.id ?? `${result.latitude}-${result.longitude}`}>
                             <button type="button" onMouseDown={() => applyPlaceToActiveStop(result)}>
-                              {result.display_name}
+                              {[result.name, result.admin1, result.country].filter(Boolean).join(', ')}
                             </button>
                           </li>
                         ))}
