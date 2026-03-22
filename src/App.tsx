@@ -1213,7 +1213,7 @@ function App() {
             </button>
           )}
           {hasTripData && (
-            <button type="button" className="text-action" onClick={clearTrip}>
+            <button type="button" className="text-action start-over-action" onClick={clearTrip}>
               Start over
             </button>
           )}

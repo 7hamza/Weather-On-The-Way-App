@@ -349,6 +349,12 @@ button.danger {
   color: #ad2f10;
 }
 
+.start-over-action {
+  margin-top: 0.72rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .search-results {
   list-style: none;
   margin: 0.5rem 0 0;
