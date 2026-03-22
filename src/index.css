@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg-base: #dbe3ec;
+  --paper: #f8fbff;
+  --paper-strong: #ffffff;
+  --line: #c7d3e0;
+  --ink-strong: #1b2528;
+  --ink-soft: #4b5f63;
+  --accent-warm: #d85735;
+  --accent-cool: #1d7a89;
+
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  background: var(--bg-base);
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg-base);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+code,
+pre {
+  font-family: 'IBM Plex Mono', monospace;
+}
