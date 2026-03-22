@@ -440,6 +440,41 @@ button.danger {
   gap: 0.45rem;
 }
 
+.weather-loading {
+  margin-top: 0.56rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px dashed #bfd0e2;
+  border-radius: 10px;
+  background: #f8fbff;
+  padding: 0.4rem 0.58rem;
+}
+
+.weather-loading p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #52606d;
+}
+
+.weather-loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #c8d8e8;
+  border-top-color: #1a73e8;
+  border-radius: 999px;
+  animation: weatherSpin 0.8s linear infinite;
+}
+
+@keyframes weatherSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .weather-dropdown summary {
   display: flex;
   align-items: center;

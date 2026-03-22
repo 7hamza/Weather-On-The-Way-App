@@ -397,7 +397,8 @@ function App() {
   const [routeSegmentDistances, setRouteSegmentDistances] = useState<number[]>([])
   const [weatherSamples, setWeatherSamples] = useState<WeatherSample[]>([])
   const [isRouting, setIsRouting] = useState(false)
-  const [, setIsWeatherLoading] = useState(false)
+  const [isWeatherLoading, setIsWeatherLoading] = useState(false)
+  const [showSlowWeatherLoader, setShowSlowWeatherLoader] = useState(false)
   const [error, setError] = useState<string>('')
   const [mapCenter, setMapCenter] = useState<LatLngTuple>(DEFAULT_MAP_CENTER)
   const [mapZoom, setMapZoom] = useState<number>(DEFAULT_MAP_ZOOM)
@@ -421,6 +422,19 @@ function App() {
     () => stops.filter((stop): stop is RouteStop & { waypoint: Waypoint } => stop.waypoint !== null),
     [stops],
   )
+
+  useEffect(() => {
+    if (!isWeatherLoading) {
+      setShowSlowWeatherLoader(false)
+      return
+    }
+
+    const timeout = setTimeout(() => {
+      setShowSlowWeatherLoader(true)
+    }, 1200)
+
+    return () => clearTimeout(timeout)
+  }, [isWeatherLoading])
 
   useEffect(() => {
     let cancelled = false
@@ -1211,6 +1225,13 @@ function App() {
               Weather checkpoints
               <span>{weatherSamples.length}</span>
             </summary>
+
+            {showSlowWeatherLoader && (
+              <div className="weather-loading" role="status" aria-live="polite">
+                <span className="weather-loading-spinner" aria-hidden="true" />
+                <p>Loading weather checkpoints...</p>
+              </div>
+            )}
 
             <ul className="weather-list">
               {weatherSamples.length === 0 && <li className="empty">No weather samples loaded yet.</li>}
