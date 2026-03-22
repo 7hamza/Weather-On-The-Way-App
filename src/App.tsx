@@ -830,6 +830,91 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stops, tripStart, tripTimeMode, weatherPointCount])
 
+  useEffect(() => {
+    const existingScript = document.querySelector(
+      'script[data-kofi-overlay="true"]',
+    ) as HTMLScriptElement | null
+
+    const applyKofiClasses = () => {
+      const textTargets = Array.from(
+        document.querySelectorAll<HTMLElement>('a, button, div, span'),
+      ).filter((el) => (el.textContent ?? '').trim().toLowerCase() === 'support me')
+
+      const launcher = textTargets[0]
+      if (!launcher) {
+        return false
+      }
+
+      launcher.classList.add('kofi-support-button', 'kofi-jiggle')
+
+      let root: HTMLElement | null = launcher
+      let hops = 0
+      while (root && hops < 7) {
+        const style = window.getComputedStyle(root)
+        const idOrClass = `${root.id} ${root.className}`.toLowerCase()
+        const looksLikeKofi = idOrClass.includes('kofi') || idOrClass.includes('ko-fi')
+        if (looksLikeKofi || style.position === 'fixed' || style.bottom !== 'auto') {
+          root.classList.add('kofi-launcher-root')
+          return true
+        }
+        root = root.parentElement
+        hops += 1
+      }
+
+      launcher.classList.add('kofi-launcher-root')
+      return true
+    }
+
+    const scheduleApply = () => {
+      let tries = 0
+      const intervalId = window.setInterval(() => {
+        tries += 1
+        const done = applyKofiClasses()
+        if (done || tries > 12) {
+          window.clearInterval(intervalId)
+        }
+      }, 350)
+    }
+
+    const drawWidget = () => {
+      const kofiWindow = window as Window & {
+        kofiWidgetOverlay?: {
+          draw: (username: string, options: Record<string, string>) => void
+        }
+      }
+
+      kofiWindow.kofiWidgetOverlay?.draw('7amzags', {
+        type: 'floating-chat',
+        'floating-chat.position': 'right',
+        'floating-chat.donateButton.text': 'Support me',
+        'floating-chat.donateButton.background-color': '#323842',
+        'floating-chat.donateButton.text-color': '#fff',
+      })
+      scheduleApply()
+    }
+
+    if (existingScript) {
+      const kofiWindow = window as Window & {
+        kofiWidgetOverlay?: {
+          draw: (username: string, options: Record<string, string>) => void
+        }
+      }
+      if (kofiWindow.kofiWidgetOverlay && !applyKofiClasses()) {
+        drawWidget()
+      } else {
+        scheduleApply()
+      }
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'
+    script.async = true
+    script.dataset.kofiOverlay = 'true'
+    script.onload = drawWidget
+    document.body.appendChild(script)
+  }, [])
+
   return (
     <main className="app-shell">
       <aside className="panel">
@@ -837,6 +922,13 @@ function App() {
           <p className="kicker">RouteApp</p>
           <h1>Free Weather On The Way App</h1>
           <p className="subtitle">Interactive motorcycle itinerary builder with free weather forecasts along your route.</p>
+          <p className="creator-note">
+            Made by 7amzaGS. Watch the project video on{' '}
+            <a href="https://youtu.be/8COzowbzDFo?si=Xb4EdsNu2cclIAMs" target="_blank" rel="noreferrer">
+              YouTube
+            </a>
+            .
+          </p>
         </header>
 
         <section className="card directions-card">

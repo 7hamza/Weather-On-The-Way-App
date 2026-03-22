@@ -47,6 +47,64 @@ h2 {
   color: #52606d;
 }
 
+.creator-note {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: #5f7082;
+}
+
+.creator-note a {
+  color: #1a73e8;
+  text-decoration: none;
+  border-bottom: 1px dashed #7ca8e5;
+}
+
+.creator-note a:hover {
+  color: #185abc;
+  border-bottom-color: #185abc;
+}
+
+@keyframes kofiJiggle {
+  0%,
+  86%,
+  100% {
+    transform: rotate(0deg) translateY(0);
+  }
+  89% {
+    transform: rotate(-2deg) translateY(-1px);
+  }
+  92% {
+    transform: rotate(2deg) translateY(0);
+  }
+  95% {
+    transform: rotate(-1deg) translateY(-1px);
+  }
+}
+
+.kofi-jiggle {
+  animation: kofiJiggle 3.2s ease-in-out infinite;
+}
+
+.kofi-support-button {
+  position: fixed !important;
+  right: 24px !important;
+  bottom: 24px !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 100000 !important;
+}
+
+.kofi-launcher-root {
+  position: fixed !important;
+  right: 24px !important;
+  bottom: 24px !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 99999 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 .card {
   border: 1px solid #dfe7ef;
   border-radius: 14px;
